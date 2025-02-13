@@ -7,7 +7,9 @@ import fs from "fs/promises";
 
 export const getBlog = async (req, res) => {
   try {
-    const getAllBlogPost = await BlogPost.find();
+    const getAllBlogPost = await BlogPost.find()
+      .sort({ createdAt: -1 })
+      .populate("author", "username");
 
     if (!getAllBlogPost || getAllBlogPost === 0) {
       return res.status(400).json({
@@ -122,7 +124,7 @@ export const createBlog = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     // current user login
-    const currentUserId = req.userInfo.payload._id;
+    const currentUserId = req.userInfo.id;
 
     // find blog
     const currentBlog = await BlogPost.findById(req.params.id);
@@ -195,7 +197,7 @@ export const updateBlog = async (req, res) => {
 export const deleteBlog = async (req, res) => {
   try {
     // current user login
-    const currentUserId = req.userInfo.payload._id;
+    const currentUserId = req.userInfo.id;
 
     // find blog
     const currentBlog = await BlogPost.findById(req.params.id);

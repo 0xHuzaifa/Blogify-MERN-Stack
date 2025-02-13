@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -9,14 +9,14 @@ import NotFoundPage from "./pages/NotFoundPage";
 import PostDetail from "./components/PostDetail";
 import Navbar from "./components/Navbar";
 import Profile from "./components/Profile";
-import BlogPostCard from "./components/BlogPostCard";
 import BlogPostForm from "./components/BlogPostForm";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import ProtectedRoutes from "./components/protected & private routes/ProtectedRoutes";
 import PrivateRoutes from "./components/protected & private routes/PrivateRoutes";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { admin, login, logout } from "./store/authSlice";
+import BlogPostTable from "./components/BlogPostTable";
 
 function App() {
   const { isLoggedIn, isAdmin } = useSelector((state) => state.authReducer);
@@ -75,7 +75,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />}>
               <Route index element={<Profile />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="blogs-list" element={<BlogPostCard />} />
+              <Route path="blogs-list" element={<BlogPostTable />} />
               <Route path="create-blog" element={<BlogPostForm />} />
             </Route>
           </Route>
