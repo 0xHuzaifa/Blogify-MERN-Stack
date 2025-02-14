@@ -9,8 +9,15 @@ import { dashboardVisit } from "../store/authSlice";
 
 export default function Dashboard() {
   const location = useLocation();
+  console.log("location", location);
+
   const pathSegments = location.pathname.split("/");
-  const activeComponent = pathSegments[pathSegments.length - 1] || "Dashboard";
+  console.log("path segment", pathSegments);
+  const activeComponent =
+    pathSegments.length === 4
+      ? pathSegments[pathSegments.length - 2] || "Dashboard"
+      : pathSegments[pathSegments.length - 1] || "Dashboard";
+  console.log("active component", activeComponent);
 
   const backendLink = useSelector((state) => state.prodReducer.link);
   const { isAdmin, isDashboardVisited } = useSelector(
@@ -25,6 +32,7 @@ export default function Dashboard() {
     profile: "Profile",
     "blogs-list": "Blog List",
     "create-blog": "Create Blog",
+    "update-blog": "Update Blog",
   };
 
   const fetch = async () => {

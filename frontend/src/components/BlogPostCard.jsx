@@ -25,7 +25,7 @@ export default function BlogPostCard({ blog }) {
                 <p>{new Date(blog.createdAt).toLocaleDateString()} </p>
               </div>
               <button className="transition duration-300 ease-in-out px-3 py-0.5 rounded-md text-white bg-[#6E8E59] hover:bg-[#780C28]">
-                <Link to={`/blogs/:${blog._id}`}>Read More</Link>
+                <Link to={`/blogs/${blog._id}`}>Read More</Link>
               </button>
             </div>
           </div>

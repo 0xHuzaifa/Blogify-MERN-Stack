@@ -1,26 +1,45 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserProfile } from "../store/userSlice";
+import axios from "axios";
 
 export default function Profile() {
-  // const [profile, setProfile] = useState();
+  const [profile, setProfile] = useState();
   const isProfile = localStorage.getItem("profile");
-  let profile = useSelector((state) => state.userReducer.userProfile);
+  const backendLink = useSelector((state) => state.prodReducer.link);
+  // let profile = useSelector((state) => state.userReducer.userProfile);
   // setProfile(userProfile);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    console.log("111");
-    if (isProfile && !profile) {
-      console.log("222");
-      const parsedProfile = JSON.parse(isProfile);
-      dispatch(setUserProfile(parsedProfile));
-      profile = parsedProfile;
-      // setProfile(userProfile);
-    }
+    const token = localStorage.getItem("token");
+    const fetch = async () => {
+      const profile = await axios.get(`${backendLink}/api/auth/profile`, {
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(profile.data.user);
+      setProfile(profile.data.user);
+    };
+
+    fetch();
+
+    // console.log("Login response", res);
+    // console.log("profile response", profile);
+    // console.log("profile user data", profile.data.user);
+
+    // console.log("111");
+    // if (isProfile && !profile) {
+    //   console.log("222");
+    //   const parsedProfile = JSON.parse(isProfile);
+    //   dispatch(setUserProfile(parsedProfile));
+    //   profile = parsedProfile;
+    //   // setProfile(userProfile);
+    // }
   }, []);
 
-  console.log("isProfile", isProfile);
+  // console.log("isProfile", isProfile);
   console.log("profile ", profile);
 
   return (
@@ -91,7 +110,7 @@ export default function Profile() {
         </div>
 
         {/* gender */}
-        <div className="w-full md:max-w-[80%] flex flex-col custom:flex-row custom:justify-between custom:items-center gap-y-2 relative">
+        {/* <div className="w-full md:max-w-[80%] flex flex-col custom:flex-row custom:justify-between custom:items-center gap-y-2 relative">
           <label
             className="text-md md:text-lg text-[#6E8E59] font-bold"
             htmlFor="gender"
@@ -126,10 +145,10 @@ export default function Profile() {
               Female
             </label>
           </div>
-        </div>
+        </div> */}
 
         {/* date of birth */}
-        <div className="w-full md:max-w-[80%] flex flex-col custom:flex-row justify-between items-center gap-y-1 relative">
+        {/* <div className="w-full md:max-w-[80%] flex flex-col custom:flex-row justify-between items-center gap-y-1 relative">
           <label
             className="text-md md:text-lg text-[#6E8E59] font-bold"
             htmlFor="password"
@@ -141,10 +160,10 @@ export default function Profile() {
             type="date"
             id="dob"
             name="dob"
-            // value={profile.dob}
+            // value={profile ? new Date(profile.dob).toLocaleDateString() : ""}
             disabled={true}
           />
-        </div>
+        </div> */}
       </form>
     </div>
   );

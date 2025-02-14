@@ -4,36 +4,47 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 export default function BlogPostTable() {
   const initialState = {
-    open: false,
     id: "",
     title: "",
+    author: "",
   };
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [updateOpen, setUpdateOpen] = useState(initialState);
-  const [deleteOpen, setDeleteOpen] = useState(initialState);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [blogDetail, setBlogDetail] = useState(initialState);
   const [currentPage, setCurrentPage] = useState(1);
   const backendLink = useSelector((state) => state.prodReducer.link);
   const blogsPerPage = 5;
 
+  const handleDelete = (id) => {
+    setBlogs(blogs.filter((blog) => blog._id !== id));
+  };
+
   useEffect(() => {
     const fetch = async () => {
-      setLoading(true);
-      try {
+      console.log("blogs", blogs);
+
+      if (blogs.length === 0) {
         setLoading(true);
-        const res = await axios.get(`${backendLink}/api/blog/get`);
-        // const resResult = JSON.stringify(res.data.posts);
-        // console.log("response", JSON.stringify(res.data.posts));
-        console.log(res);
-        setBlogs(res.data.posts);
-      } catch (error) {
-        console.log("catch error", error);
-        toast.error(error.response.data.message);
-      } finally {
-        setLoading(false);
+        try {
+          setLoading(true);
+          const res = await axios.get(`${backendLink}/api/blog/get`);
+          // const resResult = JSON.stringify(res.data.posts);
+          // console.log("response", JSON.stringify(res.data.posts));
+          console.log(res);
+          setBlogs(res.data.posts);
+        } catch (error) {
+          console.log("catch error", error);
+          toast.error(error.response.data.message);
+        } finally {
+          setLoading(false);
+        }
       }
     };
     fetch();
@@ -58,7 +69,7 @@ export default function BlogPostTable() {
         </>
       ) : (
         <>
-          {blogs ? (
+          {blogs && blogs?.length > 0 ? (
             <>
               <div className="w-full min-h-[250px]">
                 <table className="w-full border">
@@ -84,10 +95,11 @@ export default function BlogPostTable() {
                           <td className="border pl-5 py-2 space-x-5">
                             <button
                               onClick={() => {
-                                setUpdateOpen({
-                                  open: true,
+                                setUpdateOpen(true);
+                                setBlogDetail({
                                   id: blog._id,
                                   title: blog.title,
+                                  author: blog.author.username,
                                 });
                               }}
                               className="space-x-2 cursor-pointer transition duration-150 ease-out font-medium text-base bg-blue-500 text-white rounded hover:bg-blue-700 px-2 py-0.5"
@@ -95,15 +107,11 @@ export default function BlogPostTable() {
                               <FontAwesomeIcon icon={faEdit} className="pr-1" />
                               Update
                             </button>
-                            {/* <UpdatePost
-                              open={updateOpen}
-                              close={() => setUpdateOpen(false)}
-                              id={blog._id}
-                            /> */}
+
                             <button
                               onClick={() => {
-                                setDeleteOpen({
-                                  open: true,
+                                setDeleteOpen(true);
+                                setBlogDetail({
                                   id: blog._id,
                                   title: blog.title,
                                 });
@@ -116,12 +124,6 @@ export default function BlogPostTable() {
                               />
                               Delete
                             </button>
-                            {/* <DeletePost
-                              open={deleteOpen}
-                              close={() => setDeleteOpen(false)}
-                              id={blog._id}
-                              title={blog.title}
-                            /> */}
                           </td>
                         </tr>
                       );
@@ -152,59 +154,94 @@ export default function BlogPostTable() {
           ) : (
             <>
               <h5 className="text-md md:text-lg lg:text-2xl font-medium">
-                Unable to find any blogs
+                No Blogs Found!
               </h5>
             </>
           )}
         </>
       )}
 
-      <UpdatePost detail={updateOpen} />
-      <DeletePost detail={deleteOpen} />
+      <UpdatePost
+        open={updateOpen}
+        close={() => {
+          setUpdateOpen(false);
+          setBlogDetail(initialState);
+        }}
+        id={blogDetail.id}
+        title={blogDetail.title}
+        author={blogDetail.author}
+      />
+      <DeletePost
+        open={deleteOpen}
+        close={() => {
+          setDeleteOpen(false);
+          setBlogDetail(initialState);
+        }}
+        id={blogDetail.id}
+        title={blogDetail.title}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
 
-export const UpdatePost = ({ detail, setUpdateOpen }) => {
-  const initialState = {
-    open: false,
-    id: "",
-    title: "",
-  };
-  console.log("update blog detail", detail);
-  const updateBlog = async () => {
-    console.log("update blog id", detail.id);
+export const UpdatePost = ({ open, close, id, title, author }) => {
+  console.log("update post id", id);
+  const navigate = useNavigate();
+
+  const handleUpdate = async () => {
+    console.log("author", author);
+    const token = localStorage.getItem("token");
+    try {
+      const decode = jwtDecode(token);
+      console.log("jwt decode", decode.username);
+      if (author !== decode.username) {
+        throw new Error("unauthorized");
+      } else {
+        console.log("true");
+        navigate(`/dashboard/update-blog/${id}`);
+        close();
+      }
+    } catch (error) {
+      toast.error("You are not author of this post");
+      console.log(error);
+    }
   };
 
   return (
     <div
-      // onClick={setUpdateOpen(initialState)}
+      onClick={close}
       className={`fixed inset-0 flex justify-center items-center transition-colors ${
-        detail.open ? "visible bg-black/20" : "invisible"
+        open ? "visible bg-black/20" : "invisible"
       }`}
     >
       <div
-        // onClick={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         className="relative flex flex-col justify-evenly items-center p-5 space-y-5 bg-white "
       >
         <span
-          // onClick={setUpdateOpen(initialState)}
+          onClick={close}
           className="absolute top-2 right-2 border rounded-sm px-1 cursor-pointer"
         >
           <FontAwesomeIcon icon={faXmark} />
         </span>
         <h4 className="mt-5 font-semibold text-md md:text-xl lg:text-2xl">
-          Do you want to update {detail.title}?
+          Do you want to update {title}?
         </h4>
         <div className="space-x-5">
           <button
-            // onClick={setUpdateOpen(initialState)}
+            onClick={close}
             className="cursor-pointer transition duration-150 ease-out font-medium text-sm md:text-base bg-gray-500 text-white rounded hover:bg-gray-700 px-2 py-0.5"
           >
             Cancel
           </button>
 
-          <button className="cursor-pointer transition duration-150 ease-out font-medium text-sm md:text-base bg-blue-500 text-white rounded hover:bg-blue-700 px-2 py-0.5">
+          <button
+            onClick={() => {
+              handleUpdate();
+            }}
+            className="cursor-pointer transition duration-150 ease-out font-medium text-sm md:text-base bg-blue-500 text-white rounded hover:bg-blue-700 px-2 py-0.5"
+          >
             <FontAwesomeIcon icon={faEdit} className="pr-1" />
             Update
           </button>
@@ -214,36 +251,36 @@ export const UpdatePost = ({ detail, setUpdateOpen }) => {
   );
 };
 
-export const DeletePost = ({ detail, setDeleteOpen }) => {
-  const initialState = {
-    open: false,
-    id: "",
-    title: "",
-  };
-
+export const DeletePost = ({ open, close, id, title, onDelete }) => {
   const backendLink = useSelector((state) => state.prodReducer.link);
-  console.log("delete blog post details", detail);
+  const [loading, setLoading] = useState(false);
 
   const deleteBlog = async () => {
-    console.log("delete blog post id", detail.id);
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       const res = await axios.delete(`${backendLink}/api/blog/delete/${id}`, {
         headers: {
           authorization: `Bearer ${token}`,
         },
       });
-      console.log(res);
+      // console.log(res);
+      toast.success(res.data.message);
+      onDelete(id);
+      close();
     } catch (error) {
       console.log(error);
+      toast.error(error.response.data.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div
-      // onClick={setDeleteOpen(initialState)}
+      onClick={close}
       className={`fixed inset-0 flex justify-center items-center transition-colors ${
-        detail.open ? "visible bg-black/20" : "invisible"
+        open ? "visible bg-black/20" : "invisible"
       }`}
     >
       <div
@@ -251,25 +288,31 @@ export const DeletePost = ({ detail, setDeleteOpen }) => {
         className="relative flex flex-col justify-evenly items-center p-5 space-y-5 bg-white "
       >
         <span
-          // onClick={setDeleteOpen(initialState)}
+          onClick={close}
           className="absolute top-2 right-2 border rounded-sm px-1 cursor-pointer"
         >
           <FontAwesomeIcon icon={faXmark} />
         </span>
         <h4 className="mt-5 font-semibold text-md md:text-xl lg:text-2xl">
-          Do you want to Delete {detail.title}?
+          Do you want to Delete {title}?
         </h4>
         <div className="space-x-5">
           <button
-            // onClick={setDeleteOpen(initialState)}
+            onClick={close}
             className="cursor-pointer transition duration-150 ease-out font-medium text-sm md:text-base bg-gray-500 text-white rounded hover:bg-gray-700 px-2 py-0.5"
           >
             Cancel
           </button>
 
-          <button className="cursor-pointer transition duration-150 ease-out font-medium text-sm md:text-base bg-red-500 text-white rounded hover:bg-red-700 px-2 py-0.5">
+          <button
+            onClick={deleteBlog}
+            disabled={loading ? true : false}
+            className={`transition duration-150 ease-out font-medium text-sm md:text-base bg-red-500 text-white rounded hover:bg-red-700 px-2 py-0.5 ${
+              loading ? "bg-red-700 opacity-50" : "cursor-pointer"
+            }`}
+          >
             <FontAwesomeIcon icon={faEdit} className="pr-1" />
-            Delete
+            {loading ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

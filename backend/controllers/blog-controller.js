@@ -50,7 +50,7 @@ export const getSpecificBlog = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Blog Post Found Successfully",
-      posts: getBlogPost,
+      post: getBlogPost,
     });
   } catch (error) {
     console.error(`Error Message`, error.message);

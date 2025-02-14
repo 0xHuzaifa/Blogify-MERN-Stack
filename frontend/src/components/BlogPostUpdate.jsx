@@ -1,10 +1,10 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
-export default function BlogPostForm() {
+export default function BlogPostUpdate() {
   const initialState = {
     title: "",
     content: "",
@@ -15,6 +15,7 @@ export default function BlogPostForm() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const backendLink = useSelector((state) => state.prodReducer.link);
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const handleInputChange = (e) => {
@@ -35,20 +36,48 @@ export default function BlogPostForm() {
     }
   };
 
+  const fetch = async () => {
+    console.log("params id", id);
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const res = await axios.get(`${backendLink}/api/blog/get/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log(res.data.post);
+        setBlogForm({
+          title: res.data.post.title,
+          content: res.data.post.content,
+          tags: [res.data.post.tags],
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    fetch();
+  }, [id]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
       const formData = new FormData();
-      formData.append("image", file);
+      if (file) {
+        formData.append("image", file);
+      }
       formData.append("title", blogForm.title);
       formData.append("content", blogForm.content);
       formData.append("tags", blogForm.tags);
       // console.log("form data", formData);
 
-      const res = await axios.post(
-        `${backendLink}/api/blog/create`,
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        `${backendLink}/api/blog//update/${id}`,
         formData,
         {
           headers: {
@@ -133,9 +162,6 @@ export default function BlogPostForm() {
           onChange={handleInputChange}
           rows={5}
         />
-        <caption className="text-xs text-left font-semibold bg-gray-300 w-fit px-1 cursor-default">
-          Minimum 100 Character & Maximum 500 Character
-        </caption>
       </div>
 
       {/* tags */}
@@ -166,7 +192,7 @@ export default function BlogPostForm() {
             loading ? "opacity-50" : "cursor-pointer hover:bg-[#780C28]"
           }`}
         >
-          {loading ? "Submit..." : "Create Blog"}
+          {loading ? "Submit..." : "Update Blog"}
         </button>
       </div>
     </form>

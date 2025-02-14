@@ -7,6 +7,7 @@ import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { admin, login } from "../store/authSlice";
 import { setUserProfile } from "../store/userSlice";
+import { jwtDecode } from "jwt-decode";
 
 export default function Login() {
   const initialState = {
@@ -40,31 +41,22 @@ export default function Login() {
       }
 
       const token = localStorage.getItem("token");
+      const decode = jwtDecode(token);
+      console.log("login page user role", decode.role);
 
-      const profile = await axios.get(`${backendLink}/api/auth/profile`, {
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-      });
+      if (decode.role === "admin") {
+        // console.log("admin role:-", profile.data.user.role);
+        // localStorage.setItem("admin", true);
+        dispatch(login());
+        dispatch(admin());
 
-      if (profile.status === 200) {
-        // console.log("Login response", res);
-        console.log("profile response", profile);
-        console.log("profile user data", profile.data.user);
+        // dispatch(setUserProfile(profile.data.user));
+      } else if (decode.role) {
+        // console.log("user role:-", profile.data.user.role);
 
-        if (profile.data.user.role === "admin") {
-          // console.log("admin role:-", profile.data.user.role);
-          localStorage.setItem("admin", true);
-          dispatch(login());
-          dispatch(admin());
-          localStorage.setItem("profile", JSON.stringify(profile.data.user));
-          dispatch(setUserProfile(profile.data.user));
-        } else if (profile.data.user.role === "user") {
-          // console.log("user role:-", profile.data.user.role);
-
-          dispatch(login());
-        }
+        dispatch(login());
       }
+
       toast.success(res.data.message);
       setLoginData(initialState);
     } catch (error) {

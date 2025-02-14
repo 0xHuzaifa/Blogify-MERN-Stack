@@ -17,6 +17,8 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { admin, login, logout } from "./store/authSlice";
 import BlogPostTable from "./components/BlogPostTable";
+import BlogPostUpdate from "./components/BlogPostUpdate";
+import { jwtDecode } from "jwt-decode";
 
 function App() {
   const { isLoggedIn, isAdmin } = useSelector((state) => state.authReducer);
@@ -24,17 +26,18 @@ function App() {
 
   useEffect(() => {
     let token = localStorage.getItem("token");
-    let isAdminTrue = localStorage.getItem("admin");
-    // console.log(isAdminTrue);
-    // console.log(token);
-
-    if (token && isAdminTrue) {
-      dispatch(admin());
-      dispatch(login());
-    } else if (token && !isAdminTrue) {
-      dispatch(login());
-    } else if (!token) {
-      dispatch(logout());
+    // let isAdminTrue = localStorage.getItem("admin");
+    if (token) {
+      const role = jwtDecode(token);
+      if (role.role === "admin") {
+        dispatch(admin());
+        dispatch(login());
+      } else if (role.role === "user") {
+        dispatch(login());
+      } else {
+        localStorage.removeItem("token");
+        dispatch(logout());
+      }
     }
   }, []);
 
@@ -77,6 +80,7 @@ function App() {
               <Route path="profile" element={<Profile />} />
               <Route path="blogs-list" element={<BlogPostTable />} />
               <Route path="create-blog" element={<BlogPostForm />} />
+              <Route path="update-blog/:id" element={<BlogPostUpdate />} />
             </Route>
           </Route>
         </Route>

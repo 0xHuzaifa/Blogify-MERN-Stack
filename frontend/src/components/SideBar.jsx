@@ -19,16 +19,16 @@ export default function SideBar() {
 
   const handleLogout = () => {
     let token = localStorage.getItem("token");
-    let admin = localStorage.getItem("admin");
-    let profile = localStorage.getItem("profile");
+    // let admin = localStorage.getItem("admin");
+    // let profile = localStorage.getItem("profile");
     // console.log(token);
 
-    if (token && admin && profile) {
+    if (token) {
       localStorage.removeItem("token");
-      localStorage.removeItem("admin");
-      localStorage.removeItem("profile");
+      // localStorage.removeItem("admin");
+      // localStorage.removeItem("profile");
       dispatch(logout());
-      dispatch(resetUserProfile());
+      // dispatch(resetUserProfile());
       navigate("/login");
       toast.success("Logout Successfully");
     }
