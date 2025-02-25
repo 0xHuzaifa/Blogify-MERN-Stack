@@ -1,11 +1,11 @@
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setUserProfile } from "../store/userSlice";
+import { setUserProfile } from "../../store/userSlice";
 import axios from "axios";
 
 export default function Profile() {
   const [profile, setProfile] = useState();
-  const isProfile = localStorage.getItem("profile");
+
   const backendLink = useSelector((state) => state.prodReducer.link);
   // let profile = useSelector((state) => state.userReducer.userProfile);
   // setProfile(userProfile);
@@ -19,7 +19,7 @@ export default function Profile() {
           authorization: `Bearer ${token}`,
         },
       });
-      console.log(profile.data.user);
+      // console.log(profile.data.user);
       setProfile(profile.data.user);
     };
 
@@ -40,7 +40,6 @@ export default function Profile() {
   }, []);
 
   // console.log("isProfile", isProfile);
-  console.log("profile ", profile);
 
   return (
     <div className="max-w-[1100px] w-[70dvw]  bg-white p-5 my-5 shadow-2xl">

@@ -4,12 +4,129 @@ import {
   deleteFromCloudinary,
 } from "../helpers/cloudinary-helper.js";
 import fs from "fs/promises";
+import Category from "../models/Category.js";
+import mongoose from "mongoose";
 
 export const getBlog = async (req, res) => {
   try {
-    const getAllBlogPost = await BlogPost.find()
-      .sort({ createdAt: -1 })
-      .populate("author", "username");
+    const getAllBlogPost = await BlogPost.aggregate([
+      {
+        $match: { publish: true },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+
+      { $unwind: "$category" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "author",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: "$author" },
+
+      {
+        $project: {
+          title: 1,
+          content: 1,
+          tags: 1,
+          publish: 1,
+          createdAt: 1,
+          "thumbnail.url": 1,
+          "author.username": 1,
+          "category.name": 1,
+          "category.slug": 1,
+        },
+      },
+    ]);
+
+    if (!getAllBlogPost || getAllBlogPost === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No Blog Post Found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Blog Posts Found Successfully",
+      totalPost: getAllBlogPost.length,
+      posts: getAllBlogPost,
+    });
+  } catch (error) {
+    console.error(`Error Message`, error.message);
+
+    res.status(500).json({
+      success: false,
+      message: `Something went wrong please try again`,
+    });
+  }
+};
+
+export const getBlogsByCategory = async (req, res) => {
+  const { slug } = req.params;
+  console.log(slug);
+  try {
+    const category = await Category.findOne({ slug });
+    console.log(category);
+
+    // const getAllBlogPost = await BlogPost.findOne()
+    const getAllBlogPost = await BlogPost.aggregate([
+      {
+        $match: {
+          publish: true,
+          category: category._id,
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+
+      { $unwind: "$category" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "author",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: "$author" },
+
+      {
+        $project: {
+          title: 1,
+          content: 1,
+          tags: 1,
+          publish: 1,
+          "thumbnail.url": 1,
+          "author.username": 1,
+          "category.name": 1,
+          "category.slug": 1,
+        },
+      },
+    ]);
 
     if (!getAllBlogPost || getAllBlogPost === 0) {
       return res.status(400).json({
@@ -36,10 +153,45 @@ export const getBlog = async (req, res) => {
 
 export const getSpecificBlog = async (req, res) => {
   try {
-    const blogPostId = req.params.id;
-    const getBlogPost = await BlogPost.findById(blogPostId);
+    const blogPostId = new mongoose.Types.ObjectId(req.params.id);
+    const getBlogPost = await BlogPost.aggregate([
+      {
+        $match: { _id: blogPostId },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: "$category" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "author",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: "$author" },
+      {
+        $project: {
+          title: 1,
+          content: 1,
+          tags: 1,
+          publish: 1,
+          createdAt: 1,
+          "thumbnail.url": 1,
+          "author.username": 1,
+          "category.name": 1,
+          "category.slug": 1,
+        },
+      },
+    ]);
 
-    if (!getBlogPost) {
+    if (!getBlogPost.length) {
       return res.status(400).json({
         success: false,
         message:
@@ -47,10 +199,20 @@ export const getSpecificBlog = async (req, res) => {
       });
     }
 
+    const blogPost = getBlogPost[0];
+    if (req.userInfo.role !== "admin") {
+      if (!blogPost.publish) {
+        return res.status(400).json({
+          success: false,
+          message: "Blog Post Not Available",
+        });
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: "Blog Post Found Successfully",
-      post: getBlogPost,
+      post: blogPost,
     });
   } catch (error) {
     console.error(`Error Message`, error.message);
@@ -64,9 +226,9 @@ export const getSpecificBlog = async (req, res) => {
 
 export const createBlog = async (req, res) => {
   try {
-    const { title, content, tags } = req.body;
+    const { title, content, tags, category, publish } = req.body;
 
-    if (!title || !content || !tags) {
+    if (!title || !content || !tags || !category) {
       return res.status(400).json({
         success: false,
         message: "fields are required",
@@ -77,6 +239,15 @@ export const createBlog = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "image required to upload!",
+      });
+    }
+
+    // find category by name
+    const categoryId = await Category.findOne({ name: category });
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "category not found",
       });
     }
 
@@ -91,15 +262,10 @@ export const createBlog = async (req, res) => {
         url,
         publicId,
       },
-      tags: tags,
+      tags: tags.split(","),
+      category: categoryId,
+      publish: publish || false,
     });
-
-    if (!newBlogPost) {
-      return res.status(400).json({
-        success: false,
-        message: "Unable to create new Blog Post. Please try again",
-      });
-    }
 
     await newBlogPost.save();
 
@@ -135,8 +301,6 @@ export const updateBlog = async (req, res) => {
         message: "Blog not exist!",
       });
     }
-    // console.log("Current Blog Author",currentBlog.author.toString());
-    // console.log("Current User Login", currentUserId.toString());
 
     // check if the current user is not author of this blog post
     if (currentBlog.author.toString() !== currentUserId.toString()) {
@@ -166,7 +330,17 @@ export const updateBlog = async (req, res) => {
       };
     }
 
-    const { title, content, tags } = req.body;
+    const { title, content, tags, category, publish } = req.body;
+
+    // find category by name
+    const categoryId = await Category.findOne({ name: category });
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: "category not found",
+      });
+    }
+
     // update the current blog
     const updateCurrentBlogPost = await BlogPost.findByIdAndUpdate(
       req.params.id,
@@ -175,6 +349,8 @@ export const updateBlog = async (req, res) => {
         content,
         thumbnail: thumbnailData,
         tags,
+        category: categoryId,
+        publish,
       },
       { new: true }
     );
@@ -228,6 +404,73 @@ export const deleteBlog = async (req, res) => {
       success: true,
       message: "Blog Post Deleted Successfully.",
       post: deleteCurrentBlogPost,
+    });
+  } catch (error) {
+    console.error(`Error Message`, error.message);
+
+    res.status(500).json({
+      success: false,
+      message: `Something went wrong please try again`,
+    });
+  }
+};
+
+export const getDraftBlogs = async (req, res) => {
+  try {
+    const getAllBlogPost = await BlogPost.aggregate([
+      {
+        $match: { publish: false },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+
+      { $unwind: "$category" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "author",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: "$author" },
+
+      {
+        $project: {
+          title: 1,
+          content: 1,
+          tags: 1,
+          publish: 1,
+          createdAt: 1,
+          "thumbnail.url": 1,
+          "author.username": 1,
+          "category.name": 1,
+        },
+      },
+    ]);
+
+    if (!getAllBlogPost || getAllBlogPost === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No Blog Post Found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Draft Blog Posts Found Successfully",
+      totalPost: getAllBlogPost.length,
+      posts: getAllBlogPost,
     });
   } catch (error) {
     console.error(`Error Message`, error.message);

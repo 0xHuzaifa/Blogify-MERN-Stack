@@ -8,17 +8,21 @@ import About from "./pages/About";
 import NotFoundPage from "./pages/NotFoundPage";
 import PostDetail from "./components/PostDetail";
 import Navbar from "./components/Navbar";
-import Profile from "./components/Profile";
-import BlogPostForm from "./components/BlogPostForm";
+import Profile from "./components/dashboard/Profile";
+import BlogCreateForm from "./components/dashboard/BlogCreateForm";
+import BlogPostTable from "./components/dashboard/BlogPostTable";
+import BlogUpdateForm from "./components/dashboard/BlogUpdateForm";
 import { ToastContainer } from "react-toastify";
 import ProtectedRoutes from "./components/protected & private routes/ProtectedRoutes";
 import PrivateRoutes from "./components/protected & private routes/PrivateRoutes";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { admin, login, logout } from "./store/authSlice";
-import BlogPostTable from "./components/BlogPostTable";
-import BlogPostUpdate from "./components/BlogPostUpdate";
 import { jwtDecode } from "jwt-decode";
+import CategoryList from "./components/dashboard/category/CategoryList";
+import CategoryAdd from "./components/dashboard/category/CategoryAdd";
+import CategoryUpdate from "./components/dashboard/category/CategoryUpdate";
+import DraftBlogs from "./components/dashboard/DraftBlogs";
 
 function App() {
   const { isLoggedIn, isAdmin } = useSelector((state) => state.authReducer);
@@ -79,8 +83,12 @@ function App() {
               <Route index element={<Profile />} />
               <Route path="profile" element={<Profile />} />
               <Route path="blogs-list" element={<BlogPostTable />} />
-              <Route path="create-blog" element={<BlogPostForm />} />
-              <Route path="update-blog/:id" element={<BlogPostUpdate />} />
+              <Route path="draft-list" element={<DraftBlogs />} />
+              <Route path="create-blog" element={<BlogCreateForm />} />
+              <Route path="update-blog/:id" element={<BlogUpdateForm />} />
+              <Route path="category-list" element={<CategoryList />} />
+              <Route path="category-add" element={<CategoryAdd />} />
+              <Route path="category-update/:id" element={<CategoryUpdate />} />
             </Route>
           </Route>
         </Route>

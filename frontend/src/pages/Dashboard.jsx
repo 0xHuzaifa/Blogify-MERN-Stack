@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import SideBar from "../components/SideBar";
+import SideBar from "../components/dashboard/SideBar";
 // import { useSelector } from "react-redux";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -9,21 +9,21 @@ import { dashboardVisit } from "../store/authSlice";
 
 export default function Dashboard() {
   const location = useLocation();
-  console.log("location", location);
+  // console.log("location", location);
 
   const pathSegments = location.pathname.split("/");
-  console.log("path segment", pathSegments);
+  // console.log("path segment", pathSegments);
   const activeComponent =
     pathSegments.length === 4
       ? pathSegments[pathSegments.length - 2] || "Dashboard"
       : pathSegments[pathSegments.length - 1] || "Dashboard";
-  console.log("active component", activeComponent);
+  // console.log("active component", activeComponent);
 
   const backendLink = useSelector((state) => state.prodReducer.link);
   const { isAdmin, isDashboardVisited } = useSelector(
     (state) => state.authReducer
   );
-  console.log("dashboard", isAdmin);
+  // console.log("dashboard", isAdmin);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -33,6 +33,10 @@ export default function Dashboard() {
     "blogs-list": "Blog List",
     "create-blog": "Create Blog",
     "update-blog": "Update Blog",
+    "draft-list": "Draft Blogs List",
+    "category-add": "Add Category",
+    "category-list": "Category List",
+    "category-update": "Update Category",
   };
 
   const fetch = async () => {
@@ -47,7 +51,7 @@ export default function Dashboard() {
               authorization: `Bearer ${token}`,
             },
           });
-          console.log("dashboard response", res);
+          // console.log("dashboard response", res);
           toast.success(res.data.message);
         }
       }
@@ -56,12 +60,6 @@ export default function Dashboard() {
       navigate("/");
     }
   };
-
-  useEffect(() => {
-    // console.log("111");
-
-    fetch();
-  }, []);
 
   return (
     <div className="h-[calc(100vh-64px)] bg-[#EAFAEA] flex relative overflow-hidden">

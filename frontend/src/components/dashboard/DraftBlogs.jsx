@@ -7,7 +7,7 @@ import { faEdit, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
-export default function BlogPostTable() {
+export default function DraftBlogs() {
   const initialState = {
     id: "",
     title: "",
@@ -34,7 +34,7 @@ export default function BlogPostTable() {
         setLoading(true);
         try {
           setLoading(true);
-          const res = await axios.get(`${backendLink}/api/blog/get`);
+          const res = await axios.get(`${backendLink}/api/blog/get/draft`);
           // const resResult = JSON.stringify(res.data.posts);
           // console.log("response", JSON.stringify(res.data.posts));
           console.log(res);
@@ -77,6 +77,7 @@ export default function BlogPostTable() {
                     <tr className="text-xl font-bold">
                       <td className="pl-3 border">Title</td>
                       <td className="pl-3 border">Author</td>
+                      <td className="pl-3 border">Category</td>
                       <td className="pl-3 border">Publish Date</td>
                       <td className="pl-3 border">Actions</td>
                     </tr>
@@ -89,6 +90,7 @@ export default function BlogPostTable() {
                           <td className="border pl-5">
                             {blog.author.username}
                           </td>
+                          <td className="border pl-5">{blog.category.name}</td>
                           <td className="border pl-5 py-2">
                             {new Date(blog.createdAt).toLocaleDateString()}
                           </td>

@@ -7,6 +7,7 @@ import connectToDB from "./database/db.js";
 import authRoutes from "./routes/auth-routes.js";
 import adminRoutes from "./routes/admin-routes.js";
 import blogRoutes from "./routes/blog-routes.js";
+import categoryRoutes from "./routes/category-routes.js";
 
 dotenv.config();
 const app = express();
@@ -19,6 +20,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 // console.log("blog route", authRoutes)
 app.use("/api/blog", blogRoutes);
+app.use("/api/category", categoryRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);

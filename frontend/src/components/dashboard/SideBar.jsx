@@ -1,16 +1,19 @@
 import React, { useState } from "react";
-import sidebar from "../assets/sidebar.png";
+import sidebar from "../../assets/sidebar.png";
+// import sidebar from "../assets/sidebar.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
+  faBarsStaggered,
   faBlog,
   faPenToSquare,
+  faSquarePen,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { logout } from "../store/authSlice";
+import { logout } from "../../store/authSlice";
 import { toast } from "react-toastify";
-import { resetUserProfile } from "../store/userSlice";
+import { resetUserProfile } from "../../store/userSlice";
 
 export default function SideBar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -40,7 +43,7 @@ export default function SideBar() {
         isSidebarOpen ? `w-64` : `w-16`
       }`}
     >
-      <div className="flex flex-col gap-y-10">
+      <div className="flex flex-col gap-y-2">
         <h2
           className={`cursor-default p-5 text-xl md:text-2xl font-bold text-[#780C28] transition-opacity ease-in-out ${
             isSidebarOpen ? `opacity-100 duration-300 delay-200` : `opacity-0`
@@ -48,9 +51,12 @@ export default function SideBar() {
         >
           Dashboard
         </h2>
+
         <ul
-          className={`cursor-pointer text-md md:text-lg font-medium text-[#780C28] transition-opacity ease-in-out ${
-            isSidebarOpen ? `opacity-100 duration-300 delay-200` : `opacity-0`
+          className={`cursor-pointer text-md md:text-lg font-medium text-[#780C28] transition-opacity ease-in-out  ${
+            isSidebarOpen
+              ? `opacity-100 duration-300 delay-200`
+              : `opacity-0 invisible`
           }`}
         >
           <Link to={"/dashboard/profile"}>
@@ -61,9 +67,16 @@ export default function SideBar() {
           </Link>
 
           <Link to={"/dashboard/blogs-list"}>
-            <li className="px-3 py-1 my-3 transition-all duration-300 hover:bg-[#EAFAEA]">
+            <li className="px-3 py-1 transition-all duration-300 hover:bg-[#EAFAEA] my-2">
               <FontAwesomeIcon className="pr-2 pl-3" icon={faBlog} />
               Blogs List
+            </li>
+          </Link>
+
+          <Link to={"/dashboard/draft-list"}>
+            <li className="px-3 py-1 transition-all duration-300 hover:bg-[#EAFAEA] my-2">
+              <FontAwesomeIcon className="pr-2 pl-3" icon={faBlog} />
+              Draft Blogs List
             </li>
           </Link>
 
@@ -73,11 +86,28 @@ export default function SideBar() {
               Create Blog
             </li>
           </Link>
+
+          <Link to={"/dashboard/category-list"}>
+            <li className="px-3 py-1 transition-all duration-300 hover:bg-[#EAFAEA] my-2">
+              <FontAwesomeIcon className="pr-2 pl-3" icon={faBarsStaggered} />
+              Categories
+            </li>
+          </Link>
+
+          <Link to={"/dashboard/category-add"}>
+            <li className="px-3 py-1 transition-all duration-300 hover:bg-[#EAFAEA]">
+              <FontAwesomeIcon
+                className="pr-2 pl-3 object-fit"
+                icon={faSquarePen}
+              />
+              Add Category
+            </li>
+          </Link>
         </ul>
 
         <button
           onClick={handleLogout}
-          className={`transition-opacity ease-in-out cursor-pointer px-3 py-0.5 pb-1 text-white bg-[#6E8E59] hover:bg-[#780C28] ${
+          className={`transition-opacity ease-in-out cursor-pointer px-3 pt-0.5 pb-1 mt-5 text-white bg-[#6E8E59] hover:bg-[#780C28] ${
             isSidebarOpen ? `opacity-100 duration-300 delay-200` : `opacity-0`
           }`}
         >

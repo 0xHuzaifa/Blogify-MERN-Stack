@@ -1,83 +1,62 @@
 import axios from "axios";
-import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { getAllCategories } from "../../store/categorySlice";
 
-export default function BlogPostUpdate() {
+export default function BlogCreateForm() {
   const initialState = {
     title: "",
     content: "",
     tags: [""],
+    publish: false,
+    category: "",
   };
 
   const [blogForm, setBlogForm] = useState(initialState);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const backendLink = useSelector((state) => state.prodReducer.link);
-  const { id } = useParams();
+  const { categories } = useSelector((state) => state.categoryReducer);
+  // console.log("categories", categories);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const fetchCategories = useCallback(() => {
+    dispatch(getAllCategories());
+  }, [dispatch]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === "tags") {
-      const tagsArray = value.split(",");
-      console.log(tagsArray);
-
-      setBlogForm((prev) => ({
-        ...prev,
-        [name]: tagsArray,
-      }));
-    } else {
-      setBlogForm((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    console.log("target", name, value);
+    setBlogForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
-
-  const fetch = async () => {
-    console.log("params id", id);
-    try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const res = await axios.get(`${backendLink}/api/blog/get/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log(res.data.post);
-        setBlogForm({
-          title: res.data.post.title,
-          content: res.data.post.content,
-          tags: [res.data.post.tags],
-        });
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  useEffect(() => {
-    fetch();
-  }, [id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
+      console.log(blogForm);
+      const token = localStorage.getItem("token");
       const formData = new FormData();
-      if (file) {
-        formData.append("image", file);
-      }
+      formData.append("image", file);
       formData.append("title", blogForm.title);
       formData.append("content", blogForm.content);
       formData.append("tags", blogForm.tags);
+      formData.append("publish", blogForm.publish);
+      formData.append("category", blogForm.category);
       // console.log("form data", formData);
 
-      const token = localStorage.getItem("token");
-      const res = await axios.put(
-        `${backendLink}/api/blog//update/${id}`,
+      const res = await axios.post(
+        `${backendLink}/api/blog/create`,
         formData,
         {
           headers: {
@@ -87,15 +66,15 @@ export default function BlogPostUpdate() {
         },
         { timeout: 20000 }
       );
-      // console.log(res);
+      console.log(res);
       toast.success(res.data.message);
-      navigate(`/blogs/${id}`);
+      navigate(`/blogs`);
       setBlogForm(initialState);
       setFile(null);
       document.getElementById("thumbnail").value = ""; // Reset file input
     } catch (error) {
-      console.log(error.response.data);
-      toast.error(error.response.data.error);
+      console.log(error.response.data.error || error.response.data.message);
+      toast.error(error.response.data.error || error.response.data.message);
     } finally {
       setLoading(false);
     }
@@ -123,6 +102,74 @@ export default function BlogPostUpdate() {
           onChange={(e) => setFile(e.target.files[0])}
           multiple={false}
         />
+      </div>
+
+      {/* category && publish */}
+      <div className="flex gap-x-10">
+        {/* category */}
+        <div className="flex gap-x-5 items-center">
+          <label
+            className="text-md sm:text-lg font-semibold text-[#6E8E59]"
+            htmlFor="thumbnail"
+          >
+            Category:
+          </label>
+          <select
+            name="category"
+            id=""
+            className="border px-2 w-40 pb-0.5"
+            onChange={handleInputChange}
+          >
+            <option>--</option>
+            {categories?.map((category, key) => {
+              return (
+                <option key={key} value={category.name}>
+                  {category.name}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        {/* publish */}
+        <div className="w-full md:max-w-[80%] flex gap-x-5 relative">
+          <label
+            className="text-md md:text-lg text-[#6E8E59] font-bold"
+            htmlFor="publish"
+          >
+            Display:
+          </label>
+          <div className="flex gap-x-3">
+            <input
+              type="radio"
+              id="publish"
+              name="publish"
+              value={true}
+              onChange={handleInputChange}
+              required
+            />
+            <label
+              className="text-md md:text-lg text-[#6E8E59] font-bold"
+              htmlFor="gender"
+            >
+              Public
+            </label>
+            <input
+              type="radio"
+              id="female"
+              name="publish"
+              value={false}
+              onChange={handleInputChange}
+              required
+            />
+            <label
+              className="text-md md:text-lg text-[#6E8E59] font-bold"
+              htmlFor="gender"
+            >
+              Draft
+            </label>
+          </div>
+        </div>
       </div>
 
       {/* title */}
@@ -162,6 +209,9 @@ export default function BlogPostUpdate() {
           onChange={handleInputChange}
           rows={5}
         />
+        <p className="text-xs text-left font-semibold bg-gray-300 w-fit px-1 cursor-default">
+          Minimum 100 Character & Maximum 500 Character
+        </p>
       </div>
 
       {/* tags */}
@@ -192,7 +242,7 @@ export default function BlogPostUpdate() {
             loading ? "opacity-50" : "cursor-pointer hover:bg-[#780C28]"
           }`}
         >
-          {loading ? "Submit..." : "Update Blog"}
+          {loading ? "Submit..." : "Create Blog"}
         </button>
       </div>
     </form>
