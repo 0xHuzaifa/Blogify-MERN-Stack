@@ -107,13 +107,22 @@ export default function Navbar() {
           {/* Mobile Primary Links */}
           <div>
             <ul className="flex flex-col space-y-2 text-[#6E8E59] font-medium text-md/8">
-              <li className="hover:text-[#780C28] hover:bg-[#CAE0BC] px-2 py-2 rounded-md transition duration-150 ease-in-out">
+              <li
+                onClick={() => setIsMobileOpen(false)}
+                className="hover:text-[#780C28] hover:bg-[#CAE0BC] px-2 py-2 rounded-md transition duration-150 ease-in-out"
+              >
                 <Link to={"/"}>Home</Link>
               </li>
-              <li className="hover:text-[#780C28] hover:bg-[#CAE0BC] px-2 py-2 rounded-md transition duration-150 ease-in-out">
+              <li
+                onClick={() => setIsMobileOpen(false)}
+                className="hover:text-[#780C28] hover:bg-[#CAE0BC] px-2 py-2 rounded-md transition duration-150 ease-in-out"
+              >
                 <Link to={"/blogs"}>Blogs</Link>
               </li>
-              <li className="hover:text-[#780C28] hover:bg-[#CAE0BC] px-2 py-2 rounded-md transition duration-150 ease-in-out">
+              <li
+                onClick={() => setIsMobileOpen(false)}
+                className="hover:text-[#780C28] hover:bg-[#CAE0BC] px-2 py-2 rounded-md transition duration-150 ease-in-out"
+              >
                 <Link to={"/about"}>About</Link>
               </li>
             </ul>
@@ -125,19 +134,41 @@ export default function Navbar() {
           <div className="flex space-x-2 font-medium pt-2 cursor-pointer">
             {isLoggedIn ? (
               <>
-                <button
-                  onClick={handleLogout}
-                  className="transition duration-300 ease cursor-pointer px-3 py-0.5 pb-1 rounded-md text-white bg-[#6E8E59] hover:bg-[#780C28]"
-                >
-                  Logout
-                </button>
+                {isAdmin ? (
+                  <>
+                    <button
+                      onClick={() => setIsMobileOpen(false)}
+                      className="transition duration-300 ease-in-out cursor-pointer px-3 py-0.5 pb-1 rounded-md text-white bg-[#6E8E59] hover:bg-[#780C28]"
+                    >
+                      <Link to={"dashboard"}>DashBoard</Link>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileOpen(false);
+                      }}
+                      className="transition duration-300 ease-in-out cursor-pointer px-3 py-0.5 pb-1 rounded-md text-white bg-[#6E8E59] hover:bg-[#780C28]"
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
               </>
             ) : (
               <>
-                <button className="transition duration-300 ease px-3 py-0.5 pb-1 rounded-md text-[#6E8E59] hover:outline hover:outline-[#780C28] hover:text-[#780C28]">
+                <button
+                  onClick={() => setIsMobileOpen(false)}
+                  className="transition duration-300 ease px-3 py-0.5 pb-1 rounded-md text-[#6E8E59] hover:outline hover:outline-[#780C28] hover:text-[#780C28]"
+                >
                   <Link to={"/login"}>Login</Link>
                 </button>
-                <button className="transition duration-300 ease px-3 py-0.5 pb-1 rounded-md text-white bg-[#6E8E59] hover:bg-[#780C28]">
+                <button
+                  onClick={() => setIsMobileOpen(false)}
+                  className="transition duration-300 ease px-3 py-0.5 pb-1 rounded-md text-white bg-[#6E8E59] hover:bg-[#780C28]"
+                >
                   <Link to={"/registration"}>Signup</Link>
                 </button>
               </>

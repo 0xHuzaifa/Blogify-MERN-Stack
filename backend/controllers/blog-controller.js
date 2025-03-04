@@ -6,6 +6,8 @@ import {
 import fs from "fs/promises";
 import Category from "../models/Category.js";
 import mongoose from "mongoose";
+import { getCommentsByPost } from "./comments-controller.js";
+import BlogComment from "../models/BlogComment.js";
 
 export const getBlog = async (req, res) => {
   try {
@@ -187,6 +189,9 @@ export const getSpecificBlog = async (req, res) => {
           "author.username": 1,
           "category.name": 1,
           "category.slug": 1,
+          "comments.username": 1,
+          "comments.comment": 1,
+          "comments._id": 1,
         },
       },
     ]);
@@ -209,10 +214,13 @@ export const getSpecificBlog = async (req, res) => {
       }
     }
 
+    const comments = await getCommentsByPost(blogPostId);
+
     res.status(200).json({
       success: true,
       message: "Blog Post Found Successfully",
       post: blogPost,
+      comments: comments,
     });
   } catch (error) {
     console.error(`Error Message`, error.message);
@@ -270,11 +278,12 @@ export const createBlog = async (req, res) => {
     await newBlogPost.save();
 
     // delete file from upload folder after upload to cloudinary and add blog to DB
-    fs.unlink(req.file.path);
+    await fs.unlink(req.file.path);
 
     res.status(201).json({
       success: true,
       message: "New Blog Post created successfully",
+      blog: newBlogPost,
     });
   } catch (error) {
     console.error(`Error Message`, error.message);
@@ -393,24 +402,35 @@ export const deleteBlog = async (req, res) => {
       });
     }
 
-    // delete thumbnail image from cloudinary
-    await deleteFromCloudinary(currentBlog.thumbnail.publicId);
-    // delete the current blog
-    const deleteCurrentBlogPost = await BlogPost.findByIdAndDelete(
-      req.params.id
-    );
+    console.log("before session start");
+    const session = await mongoose.startSession();
+    await session.withTransaction(async () => {
+      console.log("after session start");
+      // delete all comments of current blog
+      await BlogComment.deleteMany({ post: req.params.id }, { session });
+      console.log("delete comments ");
+
+      // delete thumbnail image from cloudinary
+      await deleteFromCloudinary(currentBlog.thumbnail.publicId, { session });
+      console.log("delete image ");
+
+      // delete the current blog
+      await BlogPost.findByIdAndDelete(req.params.id, { session });
+      console.log("delete blog ");
+    });
+    await session.endSession();
+    console.log("session end ");
 
     res.status(200).json({
       success: true,
       message: "Blog Post Deleted Successfully.",
-      post: deleteCurrentBlogPost,
+      post: currentBlog,
     });
   } catch (error) {
-    console.error(`Error Message`, error.message);
-
     res.status(500).json({
       success: false,
       message: `Something went wrong please try again`,
+      error: error.message,
     });
   }
 };

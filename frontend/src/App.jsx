@@ -15,7 +15,7 @@ import BlogUpdateForm from "./components/dashboard/BlogUpdateForm";
 import { ToastContainer } from "react-toastify";
 import ProtectedRoutes from "./components/protected & private routes/ProtectedRoutes";
 import PrivateRoutes from "./components/protected & private routes/PrivateRoutes";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { admin, login, logout } from "./store/authSlice";
 import { jwtDecode } from "jwt-decode";
@@ -25,6 +25,7 @@ import CategoryUpdate from "./components/dashboard/category/CategoryUpdate";
 import DraftBlogs from "./components/dashboard/DraftBlogs";
 
 function App() {
+  const [loading, setLoading] = useState(true);
   const { isLoggedIn, isAdmin } = useSelector((state) => state.authReducer);
   const dispatch = useDispatch();
 
@@ -43,7 +44,12 @@ function App() {
         dispatch(logout());
       }
     }
-  }, []);
+    setLoading(false);
+  }, [dispatch]);
+
+  if (loading) {
+    return <h1>Loading...</h1>;
+  }
 
   return (
     <>
