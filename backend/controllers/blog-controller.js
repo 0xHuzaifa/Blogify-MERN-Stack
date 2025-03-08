@@ -189,9 +189,6 @@ export const getSpecificBlog = async (req, res) => {
           "author.username": 1,
           "category.name": 1,
           "category.slug": 1,
-          "comments.username": 1,
-          "comments.comment": 1,
-          "comments._id": 1,
         },
       },
     ]);
@@ -205,62 +202,67 @@ export const getSpecificBlog = async (req, res) => {
     }
 
     const blogPost = getBlogPost[0];
-    if (req.userInfo.role !== "admin") {
-      if (!blogPost.publish) {
-        return res.status(400).json({
-          success: false,
-          message: "Blog Post Not Available",
-        });
-      }
+    if (req.userInfo.role !== "admin" && !blogPost.publish) {
+      return res.status(403).json({
+        success: false,
+        message: "Blog Post Not Available",
+      });
     }
-
-    const comments = await getCommentsByPost(blogPostId);
 
     res.status(200).json({
       success: true,
       message: "Blog Post Found Successfully",
       post: blogPost,
-      comments: comments,
     });
   } catch (error) {
     console.error(`Error Message`, error.message);
 
-    res.status(500).json({
+    res.status(error.message.includes("not found") ? 404 : 500).json({
       success: false,
-      message: `Something went wrong please try again`,
+      message: error.message.includes("not found")
+        ? error.message
+        : "Something went wrong, please try again",
     });
   }
 };
 
 export const createBlog = async (req, res) => {
+  const { title, content, tags, category, publish } = req.body;
+  if (!title || !content || !tags || !category) {
+    return res.status(400).json({
+      success: false,
+      message: "fields are required",
+    });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "image required to upload!",
+    });
+  }
+
+  const session = await mongoose.startSession();
   try {
-    const { title, content, tags, category, publish } = req.body;
-
-    if (!title || !content || !tags || !category) {
-      return res.status(400).json({
-        success: false,
-        message: "fields are required",
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "image required to upload!",
-      });
-    }
-
+    session.startTransaction();
     // find category by name
-    const categoryId = await Category.findOne({ name: category });
+    const categoryId = await Category.findOne({ name: category }).session(
+      session
+    );
     if (!categoryId) {
+      session.abortTransaction();
       return res.status(400).json({
         success: false,
-        message: "category not found",
+        message: "Category not found",
       });
     }
 
     // get url and public id of uploaded image for thumbnail
-    const { url, publicId } = await uploadToCloudinary(req.file.path);
+    const { url, publicId } = await uploadToCloudinary(req.file.path, {
+      session,
+    });
+    // delete file from upload folder after upload to cloudinary and add blog to DB
+    await fs.unlink(req.file.path);
 
     const newBlogPost = new BlogPost({
       title: title,
@@ -270,15 +272,14 @@ export const createBlog = async (req, res) => {
         url,
         publicId,
       },
-      tags: tags.split(","),
+      tags: tags.split(",").map((tag) => tag.trim()),
       category: categoryId,
       publish: publish || false,
     });
 
-    await newBlogPost.save();
+    await newBlogPost.save({ session });
 
-    // delete file from upload folder after upload to cloudinary and add blog to DB
-    await fs.unlink(req.file.path);
+    session.commitTransaction();
 
     res.status(201).json({
       success: true,
@@ -286,13 +287,13 @@ export const createBlog = async (req, res) => {
       blog: newBlogPost,
     });
   } catch (error) {
-    console.error(`Error Message`, error.message);
-
+    session.abortTransaction();
     res.status(500).json({
       success: false,
-      message: `Something went wrong please try again`,
-      error: error.message,
+      message: error.message,
     });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -380,10 +381,10 @@ export const updateBlog = async (req, res) => {
 };
 
 export const deleteBlog = async (req, res) => {
-  try {
-    // current user login
-    const currentUserId = req.userInfo.id;
+  // current user login
+  const currentUserId = req.userInfo.id;
 
+  try {
     // find blog
     const currentBlog = await BlogPost.findById(req.params.id);
     // if blog not found
@@ -402,24 +403,18 @@ export const deleteBlog = async (req, res) => {
       });
     }
 
-    console.log("before session start");
     const session = await mongoose.startSession();
     await session.withTransaction(async () => {
-      console.log("after session start");
       // delete all comments of current blog
       await BlogComment.deleteMany({ post: req.params.id }, { session });
-      console.log("delete comments ");
 
       // delete thumbnail image from cloudinary
       await deleteFromCloudinary(currentBlog.thumbnail.publicId, { session });
-      console.log("delete image ");
 
       // delete the current blog
       await BlogPost.findByIdAndDelete(req.params.id, { session });
-      console.log("delete blog ");
     });
     await session.endSession();
-    console.log("session end ");
 
     res.status(200).json({
       success: true,
@@ -427,10 +422,10 @@ export const deleteBlog = async (req, res) => {
       post: currentBlog,
     });
   } catch (error) {
-    res.status(500).json({
+    await session.endSession();
+    res.status(error.message.includes("author") ? 401 : 500).json({
       success: false,
-      message: `Something went wrong please try again`,
-      error: error.message,
+      message: error.message,
     });
   }
 };

@@ -3,12 +3,10 @@ import BlogComment from "../models/BlogComment.js";
 
 // Create a BlogComment and add it to a specific blog post
 const createBlogComment = async (req, res) => {
-  const { blogPostId, comment } = req.body;
+  const { blogPostId, comment, parentCommentId } = req.body;
   const author = req.userInfo.id;
-
+  console.log("parent comment", parentCommentId);
   try {
-    console.log("blogPost Id", blogPostId);
-    console.log("comment", comment);
     const blogPost = await BlogPost.exists({ _id: blogPostId });
     if (!blogPost) {
       return res.status(404).json({
@@ -17,10 +15,26 @@ const createBlogComment = async (req, res) => {
       });
     }
 
+    if (parentCommentId && parentCommentId.trim() !== "") {
+      const parentComment = await BlogComment.findById({
+        _id: parentCommentId,
+      });
+      if (!parentComment || parentComment.post.toString() !== blogPostId) {
+        return res.status(404).json({
+          success: false,
+          message: "Comment not found",
+        });
+      }
+    }
+
     const newComment = new BlogComment({
       post: blogPostId,
       author,
       comment,
+      parentComment:
+        parentCommentId && parentCommentId.trim() !== ""
+          ? parentCommentId
+          : null,
     });
     await newComment.save();
 
@@ -41,8 +55,9 @@ const createBlogComment = async (req, res) => {
   }
 };
 
-const getCommentsByPost = async (postId) => {
-  // const { postId } = req.params;
+const getCommentsByPost = async (req, res) => {
+  const { postId } = req.params;
+  const { page = 1, limit = 10 } = req.query;
 
   try {
     const blogPost = await BlogPost.exists({ _id: postId });
@@ -53,26 +68,47 @@ const getCommentsByPost = async (postId) => {
       });
     }
 
-    const comments = await BlogComment.find({ post: postId })
+    const comments = await BlogComment.find({
+      post: postId,
+      parentComment: null, // Top-level comments only
+    })
       .sort({ createdAt: -1 })
-      .populate("author", "username");
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .populate("author", "username")
+      .populate({
+        path: "replies", // populate replies virtual field
+        select: "comment author createdAt",
+        populate: { path: "author", select: "username" },
+        options: { sort: { createdAt: 1 } },
+      });
 
     if (!comments) {
-      return res.status(404).json({
-        success: false,
-        message: "comments post not found",
-      });
+      throw new Error("Comments not found");
     }
 
-    return comments;
+    const totalComments = await BlogComment.countDocuments({
+      post: postId,
+      parentComment: null,
+    });
 
-    // res.status(200).json({
-    //   success: true,
-    //   messages: "Comments Found Successfully",
-    //   comments: comments,
-    // });
+    res.status(200).json({
+      success: true,
+      message: "Comments retrieved successfully",
+      comments: comments,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalComments / limit),
+        totalComments,
+      },
+    });
   } catch (error) {
-    console.log(error);
+    res.status(error.message.includes("not found") ? 404 : 500).json({
+      success: false,
+      message: error.message.includes("not found")
+        ? error.message
+        : "Something went wrong, please try again",
+    });
   }
 };
 
@@ -141,7 +177,7 @@ const deleteBlogComment = async (req, res) => {
     ).populate("author", "username");
 
     res.status(200).json({
-      success: false,
+      success: true,
       message: "Comment Deleted",
       comment: deletedComment,
     });

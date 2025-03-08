@@ -11,7 +11,6 @@ const getAllBlogs = createAsyncThunk("getBlogs", async (_, { getState }) => {
       return blogs;
     }
     const res = await axios.get(`${backendLink}/api/blog/get`);
-    console.log(res);
     return res.data.posts;
   } catch (error) {
     console.log(error);

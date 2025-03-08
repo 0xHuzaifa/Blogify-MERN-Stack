@@ -20,7 +20,7 @@ const BlogPostSchema = new mongoose.Schema(
         true,
         "Title is required. Please Provide the Title of the Post",
       ],
-      maxlength: [20, "Title do not exceeds 20 characters"],
+      maxlength: [50, "Title do not exceeds 50 characters"],
     },
 
     content: {

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import CommentSection from "./CommentSection";
+import CommentSection from "./commentSection/CommentSection";
 // import img2 from "../assets/img2.jpg";
 export default function PostDetail() {
   const [blog, setBlog] = useState();
@@ -86,7 +86,7 @@ export default function PostDetail() {
         </div>
       </article>
 
-      <CommentSection comments={comments} blogId={id} />
+      <CommentSection postId={id} />
     </div>
   );
 }
